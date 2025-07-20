@@ -1,6 +1,7 @@
 # backend/main.py
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware  # ⭐️ Add this import
 from pydantic import BaseModel
 import joblib
 import numpy as np
@@ -10,6 +11,20 @@ from utils.synonyms import normalize_text
 
 # Initialize FastAPI
 app = FastAPI(title="Triager+ API", description="Predicts helpdesk ticket category and priority.")
+
+# ⭐️ Configure CORS middleware
+origins = [
+    "https://3wh.dev",
+    "https://www.3wh.dev"  # Optional but useful if www gets used
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load models and encoders
 category_encoder = joblib.load("models/category_encoder.pkl")
