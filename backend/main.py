@@ -49,23 +49,41 @@ async def predict(request: TicketRequest):
     ticket_text = request.ticket_text
     model_choice = request.model_choice
 
+    print(f"Received request — model_choice: {model_choice}")
+    print(f"Ticket text: {ticket_text[:50]}...")
+
     norm_text = normalize_text(ticket_text)
 
     if model_choice == "Naive Bayes":
+        print("Using Naive Bayes")
+        try:
+            X_priority = vectorizer.transform([norm_text])
+            category_pred = category_model.predict(X_priority)[0]
+            category_conf = np.max(category_model.predict_proba(X_priority))
+            priority_pred = priority_model.predict(X_priority)[0]
+            priority_conf = np.max(priority_model.predict_proba(X_priority))
+        except Exception as e:
+            print("Naive Bayes prediction failed:", e)
+            raise
+    else:
+        print("Using DistilBERT")
+        # Only run if models are actually loaded (uncomment if needed)
+        inputs = tokenizer(ticket_text, return_tensors="pt", padding=True, truncation=True)
+        with torch.no_grad():
+            outputs = bert_model(**inputs)
+            probs = torch.nn.functional.softmax(outputs.logits, dim=1)
+            category_idx = torch.argmax(probs, dim=1).item()
+            category_pred = category_encoder.inverse_transform([category_idx])[0]
+            category_conf = probs[0][category_idx].item()
+
         X_priority = vectorizer.transform([norm_text])
-        category_pred = category_model.predict(X_priority)[0]
-        category_conf = np.max(category_model.predict_proba(X_priority))
         priority_pred = priority_model.predict(X_priority)[0]
         priority_conf = np.max(priority_model.predict_proba(X_priority))
 
-        return {
-            "category": category_pred,
-            "category_confidence": round(category_conf, 4),
-            "priority": priority_pred,
-            "priority_confidence": round(priority_conf, 4),
-            "model_used": "Naive Bayes"
-        }
-    else:
-        return {
-            "error": "DistilBERT temporarily disabled due to memory constraints. Please use Naive Bayes model."
-        }
+    return {
+        "category": category_pred,
+        "category_confidence": round(category_conf, 4),
+        "priority": priority_pred,
+        "priority_confidence": round(priority_conf, 4),
+        "model_used": model_choice
+    }
