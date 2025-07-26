@@ -13,15 +13,12 @@ from utils.synonyms import normalize_text
 app = FastAPI(title="Triager+ API", description="Predicts helpdesk ticket category and priority.")
 
 # ⭐️ Configure CORS middleware
-origins = [
-    "https://3wh.dev",
-    "https://www.3wh.dev"
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=False,  # Important: must be False if origins = ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
