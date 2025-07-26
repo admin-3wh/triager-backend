@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse  # ⭐️ added for graceful error
 app = FastAPI(title="Triager+ API", description="Predicts helpdesk ticket category and priority.")
 
 # ⭐️ Configure CORS middleware
-origins = ["*"]
+origins = ["https://3wh.dev"]
 
 app.add_middleware(
     CORSMiddleware,
