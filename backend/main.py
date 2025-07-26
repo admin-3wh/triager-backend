@@ -8,6 +8,7 @@ import numpy as np
 # import torch
 # from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
 from utils.synonyms import normalize_text
+from fastapi.responses import JSONResponse  # ⭐️ added for graceful error
 
 # Initialize FastAPI
 app = FastAPI(title="Triager+ API", description="Predicts helpdesk ticket category and priority.")
@@ -63,19 +64,18 @@ async def predict(request: TicketRequest):
             print("Naive Bayes prediction failed:", e)
             raise
     else:
-        print("Using DistilBERT")
-        # Only run if models are actually loaded (uncomment if needed)
-        inputs = tokenizer(ticket_text, return_tensors="pt", padding=True, truncation=True)
-        with torch.no_grad():
-            outputs = bert_model(**inputs)
-            probs = torch.nn.functional.softmax(outputs.logits, dim=1)
-            category_idx = torch.argmax(probs, dim=1).item()
-            category_pred = category_encoder.inverse_transform([category_idx])[0]
-            category_conf = probs[0][category_idx].item()
-
-        X_priority = vectorizer.transform([norm_text])
-        priority_pred = priority_model.predict(X_priority)[0]
-        priority_conf = np.max(priority_model.predict_proba(X_priority))
+        print("Using DistilBERT — Not available")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "DistilBERT model is currently disabled due to memory limits.",
+                "category": None,
+                "category_confidence": None,
+                "priority": None,
+                "priority_confidence": None,
+                "model_used": "DistilBERT (unavailable)"
+            }
+        )
 
     return {
         "category": category_pred,
